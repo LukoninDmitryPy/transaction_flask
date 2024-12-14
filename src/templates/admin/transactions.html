@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Transactions</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Amount</th>
+                <th>Commission</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="transactions-table-body">
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction.id }}</td>
+                <td>{{ transaction.amount }}</td>
+                <td>{{ transaction.commission }}</td>
+                <td>{{ transaction.status }}</td>
+                <td>{{ transaction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    <a href="{{ url_for('admin.transaction_detail', transaction_id=transaction.id) }}" 
+                       class="btn btn-sm btn-info">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function fetchTransactions() {
+    $.ajax({
+        url: '/admin/transactions/data',
+        method: 'GET',
+        success: function(data) {
+            let tableBody = $('#transactions-table-body');
+            tableBody.empty();
+            data.forEach(function(transaction) {
+                tableBody.append(`
+                    <tr>
+                        <td>${transaction.id}</td>
+                        <td>${transaction.amount}</td>
+                        <td>${transaction.commission}</td>
+                        <td>${transaction.status}</td>
+                        <td>${transaction.created_at}</td>
+                        <td>
+                            <a href="/admin/transactions/${transaction.id}" 
+                               class="btn btn-sm btn-info">View</a>
+                        </td>
+                    </tr>
+                `);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching transactions:', error);
+        }
+    });
+}
+
+// Первоначальная загрузка
+fetchTransactions();
+// Обновление каждые 2.5 секунды
+setInterval(fetchTransactions, 2500);
+</script>
+{% endblock %}

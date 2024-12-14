@@ -1,0 +1,12 @@
+Flask
+flask-admin
+Flask-SQLAlchemy
+flask-login
+Flask-WTF
+Celery
+redis
+requests
+psycopg2
+alembic
+gunicorn
+flasgger

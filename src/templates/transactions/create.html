@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Создать транзакцию</h3>
+                </div>
+                <div class="card-body">
+                    <form id="createTransactionForm">
+                        <div class="form-group mb-3">
+                            <label for="amount">Сумма</label>
+                            <input type="number" step="0.01" class="form-control" id="amount" required>
+                            <small class="text-muted">Комиссия: <span id="commission">0</span></small>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Создать транзакцию</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('amount').addEventListener('input', function(e) {
+    const amount = parseFloat(e.target.value) || 0;
+    const commission = amount * {{ current_user.commission_rate }};
+    document.getElementById('commission').textContent = commission.toFixed(2);
+});
+
+document.getElementById('createTransactionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    fetch('/api/create_transaction', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            amount: parseFloat(document.getElementById('amount').value)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            // Периодически проверяем статус транзакции
+            const checkStatus = setInterval(() => {
+                fetch(`/api/check_transaction/${data.id}`)
+                    .then(response => response.json())
+                    .then(transaction => {
+                        if (transaction.status !== 'pending') {
+                            clearInterval(checkStatus);
+                            window.location.href = `/api/transactions/${data.id}`;
+                        }
+                    });
+            }, 1000);
+        } else {
+            alert('Ошибка при создании транзакции');
+        }
+    });
+});
+</script>
+{% endblock %}

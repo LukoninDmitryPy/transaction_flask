@@ -1,0 +1,71 @@
+version: '3'
+volumes:
+    postgres:
+services:
+  web:
+    depends_on:
+      - db
+    image: task_master
+    build: .
+    environment:
+      - FLASK_APP=app.py  # Укажите ваш основной файл приложения
+      - FLASK_ENV=development
+    volumes:
+      - ./src:/app
+    ports:
+      - "5000:5000"
+    networks:
+      - custom
+    entrypoint: ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+
+  task_worker:
+    depends_on:
+      - db
+      - rabbitmq
+    image: task_master
+    build: .
+
+    volumes:
+      - ./src:/app
+    networks:
+      - custom
+    entrypoint: ["celery", "-A", "tasks", "worker", "--loglevel", "info"]
+
+  task_beat:
+    depends_on:
+      - db
+      - rabbitmq
+    image: task_master
+    build: .
+
+    volumes:
+      - ./src:/app
+    networks:
+      - custom
+    entrypoint: ["celery", "-A", "tasks", "beat", "--loglevel", "info"]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - custom
+  
+  db:
+    container_name: "db-scraping"
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - PGDATA=postgres
+    ports:
+      - "5484:5432"
+    networks:
+      - custom
+
+networks:
+  custom:
+    driver: bridge
